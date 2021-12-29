@@ -9,6 +9,7 @@ run `pylint filename.py` to find recommendations on improving format.
 import configparser
 import json
 import logging
+from os import execlp
 from time import sleep
 from random  import randint
 import names
@@ -104,7 +105,7 @@ class Player:
 
     def sell_stock(self, stock, sell_count):
         """
-
+        Sell given stock from holdings. Function does nothing if stock not in holdings!
 
         Args:
             stock ([type]): [description]
@@ -112,14 +113,17 @@ class Player:
             buy_count ([type]): [description]
         """
 
-        print(f"{self.name} sold {sell_count} of {stock.get_name()}")
+        try:
+            self.holdings[stock.get_name()] -= sell_count
+            self.coh += stock.get_value()*sell_count
 
-        self.coh += stock.get_value()*sell_count
+            if self.holdings[stock.get_name()] == 0:
+                del self.holdings[stock.get_name()]
 
-        self.holdings[stock.get_name()] -= sell_count
+            print(f"{self.name} sold {sell_count} of {stock.get_name()}")
 
-        if self.holdings[stock.get_name()] == 0:
-            del self.holdings[stock.get_name()]
+        except:
+            pass
 
     def split_bust(self, outcome, stock):
         """
@@ -465,7 +469,7 @@ def main():
             plt.plot(x, _stock.get_values(), _stock.get_color())
 
         # plt.savefig('stock.png', dpi=1200)
-        plt.savefig('stock.png')
+        plt.savefig('data/stock.png')
 
         # Every 10 turns, players can purchase.
         if turn_num % 10 == 0:
@@ -487,15 +491,29 @@ def main():
                 player.show_holdings(stocks)
 
                 while True:
-                    action = input("Select action: buy = b, sell s, finish = q, end game = gg, show standings: SS:")
+                    action = input("Select action: buy = b, sell s, finish = q, end game = gg, show standings: SS, show holdings: h, show market: m: ")
                     if action == "q" or action == "gg":
                         break
 
+                    if action == "m":
+                        show_stocks(stocks)
+
+                    if action == "h":
+                        player.show_holdings(stocks)
+
                     if action == "b":
+                        show_stocks(stocks)
                         show_available(player, stocks)
                         stocks_to_buy = input("List stocks to purchase (Ex. 1 or 0, 3, 5): ")
                         if stocks_to_buy == "-1": continue
                         for i in stocks_to_buy.split(","):
+
+                            # loop will reset if indec is out of range..
+                            try:
+                                if int(i) not in range(len(stocks)): continue
+                            except:
+                                continue
+
                             inp_str = f"How much of {stocks[int(i)].get_name()} to buy? MAX {500*( int(player.get_coh()/stocks[int(i)].get_value()) //500)} available @{stocks[int(i)].get_value()}: "
                             buy_count = input(inp_str)
                             buy_count = 500*( int(buy_count) //500)
@@ -503,29 +521,37 @@ def main():
                             player.show_coh()
 
                     if action == "s":
-                        stocks_to_sell = input("List stocks to purchase (Ex. 1 or 0, 3, 5): ")
-                        if stocks_to_buy == "-1": continue
+                        player.show_holdings(stocks)
 
-                        for i in stocks_to_sell.split(","):
-                            stock_name = list(player.get_holdings().keys())[int(i)]
-                            inp_str = f"How much of {stock_name} to sell? Available {player.get_holdings()[stock_name]}: "
-                            sell_count = int(input(inp_str))
-                            stock = [_stock for _stock in stocks if _stock.get_name() == list(player.holdings.keys())[int(i)]][0]
-                            player.sell_stock(stock, sell_count)
-                            player.show_coh()
+                        stocks_to_sell = input("List stocks to sell (Ex. 1 or 0, 3, 5): ")
+                        if stocks_to_sell == "-1": continue
 
-                    if action == "SS":
-                        tmp_players = sorted(players, key=lambda x: x.net_worth, reverse=True)
-                        for player in tmp_players:
-                            player.set_market_value(stocks)
-                            player.set_net_worth()
-                            player.show_net_worth()
+                        for index in stocks_to_sell.split(","):
+
+                            stock = stocks[int(index)]
+                            try:
+                                inp_str = f"How much of {stock.get_name()} to sell? Available {player.get_holdings()[stock.get_name()]}: "
+                                sell_count = int(input(inp_str))
+
+                                # stock = [_stock for _stock in stocks if _stock.get_name() == list(player.holdings.keys())[int(i)]][0]
+
+                                player.sell_stock(stock, sell_count)
+                                player.show_coh()
+                            except:
+                                print(f"{stock.get_name()} not in holdings")
+
+                    # if action == "SS":
+                    #     tmp_players = sorted(players, key=lambda x: x.net_worth, reverse=True)
+                    #     for player in tmp_players:
+                    #         player.set_market_value(stocks)
+                    #         player.set_net_worth()
+                    #         player.show_net_worth()
 
         # if turn_num > 100 or action == "gg":
         if action == "gg":
             break
 
-        sleep(0.1)
+        # sleep(0.1)
 
     print("########## Game ended! ##########")
 
