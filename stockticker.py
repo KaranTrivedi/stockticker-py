@@ -131,9 +131,15 @@ class Player:
         """
 
         if outcome == "bust":
-            del self.holdings[stock.get_name()]
+            try:
+                del self.holdings[stock.get_name()]
+            except:
+                pass
         if outcome == "split":
-            self.holdings[stock.get_name()] *= 2
+            try:
+                self.holdings[stock.get_name()] *= 2
+            except:
+                pass
 
     def get_name(self):
         """
@@ -154,7 +160,7 @@ class Player:
         Returns networth of player
         """
 
-        print(f"{self.name} networth is: {self.coh + self.market_value}")
+        print(f"{self.name}'s net worth is: {self.coh + self.market_value}")
 
     def get_coh(self):
         """
@@ -203,8 +209,14 @@ class Player:
         """
 
         print(f"{self.name} Holdings:\n-------------------------------")
-        for index, key in enumerate(self.holdings):
-            print(f"{index}: {key}:{self.holdings[key]}@{[stock for stock in stocks if key == stock.get_name()][0].get_value()}")
+
+        for index in range(len(stocks)):
+            try:
+                print(f"{index}: {stocks[index].get_name()}: {self.holdings[stocks[index].get_name()]}, worth ${self.holdings[stocks[index].get_name()]*stocks[index].get_value()}")
+            except:
+                print(f"{index}: {stocks[index].get_name()}: 0, worth $0")
+
+        self.show_net_worth()
 
     def set_coh(self, stock, val):
         """
@@ -369,6 +381,17 @@ def show_stocks(stocks):
     for i in range(len(stocks)):
         print(f"{i}: {stocks[i].get_name()}@{stocks[i].get_value()}")
 
+def show_available(player, stocks):
+    """
+    Shows max number of stocks to buy based on coh.
+
+    Args:
+        player ([type]): [description]
+        stocks ([type]): [description]
+    """
+    for index in range(len(stocks)):
+        print(f"{index}: MAX {500*( int(player.get_coh()/stocks[int(index)].get_value()) //500)} {stocks[index].get_name()} available @{stocks[int(index)].get_value()}")
+
 def main():
     """
     Main function.
@@ -379,7 +402,6 @@ def main():
                     format="%(asctime)s::%(name)s::%(funcName)s::%(levelname)s::%(message)s",
                     datefmt="%Y-%m-%dT%H:%M:%S%z")
 
-    # logger.info("####################STARTING####################")
 
     # Intiate stonk with values.
     stocks = []
@@ -465,11 +487,12 @@ def main():
                 player.show_holdings(stocks)
 
                 while True:
-                    action = input("Select action: buy = b, sell s, finish = q, end game = gg: ")
+                    action = input("Select action: buy = b, sell s, finish = q, end game = gg, show standings: SS:")
                     if action == "q" or action == "gg":
                         break
 
                     if action == "b":
+                        show_available(player, stocks)
                         stocks_to_buy = input("List stocks to purchase (Ex. 1 or 0, 3, 5): ")
                         if stocks_to_buy == "-1": continue
                         for i in stocks_to_buy.split(","):
@@ -491,6 +514,12 @@ def main():
                             player.sell_stock(stock, sell_count)
                             player.show_coh()
 
+                    if action == "SS":
+                        tmp_players = sorted(players, key=lambda x: x.net_worth, reverse=True)
+                        for player in tmp_players:
+                            player.set_market_value(stocks)
+                            player.set_net_worth()
+                            player.show_net_worth()
 
         # if turn_num > 100 or action == "gg":
         if action == "gg":
