@@ -220,6 +220,7 @@ class Player:
             except:
                 print(f"{index}: {stocks[index].get_name()}: 0, worth $0")
 
+        self.show_coh()
         self.show_net_worth()
 
     def set_coh(self, stock, val):
@@ -459,20 +460,22 @@ def main():
         turn_num += 1
         x.append(turn_num)
 
-        plt.xlabel('Number of Turns')
-        plt.ylabel('Stock value')
-        plt.legend(["grain", "industrial", "bonds", "oil", "silver", "gold"])
-        plt.title('Stock Value over time')
-        plt.ylim(ymin = 0, ymax = 2)
-
-        for _stock in stocks:
-            plt.plot(x, _stock.get_values(), _stock.get_color())
-
-        # plt.savefig('stock.png', dpi=1200)
-        plt.savefig('data/stock.png')
-
         # Every 10 turns, players can purchase.
         if turn_num % 10 == 0:
+            plt.xlabel('Number of Turns')
+            plt.ylabel('Stock value')
+
+            legend_str = [f"{index}: {stocks[index].get_name()}" for index in range(len(stocks))]
+
+            plt.legend(legend_str)
+            plt.title('Stock Value over time')
+            plt.ylim(ymin = 0, ymax = 2)
+
+            for _stock in stocks:
+                plt.plot(x, _stock.get_values(), _stock.get_color())
+
+            # plt.savefig('stock.png', dpi=1200)
+            plt.savefig('data/stock.png')
 
             print("############# AI Players will take turns #####################")
 
@@ -515,7 +518,12 @@ def main():
                                 continue
 
                             inp_str = f"How much of {stocks[int(i)].get_name()} to buy? MAX {500*( int(player.get_coh()/stocks[int(i)].get_value()) //500)} available @{stocks[int(i)].get_value()}: "
-                            buy_count = input(inp_str)
+                            try:
+                                buy_count = input(inp_str)
+                            except:
+                                print("Bad input")
+                                continue
+
                             buy_count = 500*( int(buy_count) //500)
                             if buy_count: player.buy_stock(stocks[int(i)], buy_count)
                             player.show_coh()
@@ -528,10 +536,18 @@ def main():
 
                         for index in stocks_to_sell.split(","):
 
-                            stock = stocks[int(index)]
+                            try:
+                                stock = stocks[int(index)]
+                            except:
+                                print("bad index")
+                                continue
                             try:
                                 inp_str = f"How much of {stock.get_name()} to sell? Available {player.get_holdings()[stock.get_name()]}: "
-                                sell_count = int(input(inp_str))
+                                try:
+                                    sell_count = int(input(inp_str))
+                                except:
+                                    print("Bad input")
+                                    continue
 
                                 # stock = [_stock for _stock in stocks if _stock.get_name() == list(player.holdings.keys())[int(i)]][0]
 
@@ -547,6 +563,8 @@ def main():
                     #         player.set_net_worth()
                     #         player.show_net_worth()
 
+                    player.set_market_value(stocks)
+
         # if turn_num > 100 or action == "gg":
         if action == "gg":
             break
@@ -554,6 +572,7 @@ def main():
         # sleep(0.1)
 
     print("########## Game ended! ##########")
+    print(f"Game lasted: {turn_num} Turns")
 
     # players[-1].show_holdings(stocks)
     # players[-1].show_coh()
