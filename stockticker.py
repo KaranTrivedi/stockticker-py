@@ -7,14 +7,14 @@ run `pylint filename.py` to find recommendations on improving format.
 
 """
 import configparser
-import json
 import logging
-from os import execlp
-from time import sleep
-from random  import randint
-import names
-import sys
+from random import randint
+
 import matplotlib.pyplot as plt
+import names
+
+from player import Player
+from stock import Stock
 
 #Define config and logger.
 CONFIG = configparser.ConfigParser()
@@ -58,291 +58,6 @@ STOCKS = [
 AMOUNTS = [5, 10, 20]
 ROLL_TYPE = ["up", "down", "div"]
 
-class Player:
-    """
-    Create sample class
-    """
-
-    def __init__(self, name, coh):
-        self.name = name
-        self.market_value = 0
-        self.market_value_ot = [0]
-
-        self.coh = coh
-        self.coh_ot = [coh]
-
-        self.net_worth = coh
-        self.net_worth_ot = [coh]
-
-        self.holdings = {}
-
-    def __str__(self):
-        """
-        stringify
-        """
-        return json.dumps(vars(self), indent=2)
-
-    def calculate_worth(self):
-        pass
-
-    def buy_stock(self, stock, buy_count):
-        """
-        Buy stock for player.
-        update coh, networth
-
-        Args:
-            stock ([type]): [description]
-            buy_count ([type]): [description]
-        """
-
-        print(f"{self.name} bought {buy_count} of {stock.get_name()}")
-        self.coh -= stock.get_value()*buy_count
-
-        if stock.get_name() in self.holdings.keys():
-            self.holdings[stock.get_name()] += buy_count
-        else:
-            self.holdings[stock.get_name()] = buy_count
-
-    def sell_stock(self, stock, sell_count):
-        """
-        Sell given stock from holdings. Function does nothing if stock not in holdings!
-
-        Args:
-            stock ([type]): [description]
-            stock_val ([type]): [description]
-            buy_count ([type]): [description]
-        """
-
-        try:
-            self.holdings[stock.get_name()] -= sell_count
-            self.coh += stock.get_value()*sell_count
-
-            if self.holdings[stock.get_name()] == 0:
-                del self.holdings[stock.get_name()]
-
-            print(f"{self.name} sold {sell_count} of {stock.get_name()}")
-
-        except:
-            pass
-
-    def split_bust(self, outcome, stock):
-        """
-        Split and bust behaviour for updating player holdings.
-
-        Args:
-            outcome ([type]): [description]
-            stock ([type]): [description]
-        """
-
-        if outcome == "bust":
-            try:
-                del self.holdings[stock.get_name()]
-            except:
-                pass
-        if outcome == "split":
-            try:
-                self.holdings[stock.get_name()] *= 2
-            except:
-                pass
-
-    def get_name(self):
-        """
-        Return name of stock
-        """
-
-        return self.name
-
-    def get_net_worth(self):
-        """
-        Returns networth of player
-        """
-
-        return self.coh + self.market_value
-
-    def show_net_worth(self):
-        """
-        Returns networth of player
-        """
-
-        print(f"{self.name}'s net worth is: {self.coh + self.market_value}")
-
-    def get_coh(self):
-        """
-        
-
-        Returns:
-            [type]: [description]
-        """
-        return self.coh
-
-    def show_coh(self):
-        """
-        
-
-        Returns:
-            [type]: [description]
-        """
-
-        print(f"{self.name} has ${self.coh} on hand")
-
-    def get_holdings(self):
-        """
-        
-        """
-
-        return self.holdings
-
-    def get_market_value(self):
-        """
-
-        Returns:
-            [type]: [description]
-        """
-
-        return self.market_value
-
-    def show_market_value(self):
-        """
-
-        """
-        print(f"{self.name} market value is: {self.market_value}")
-
-    def show_holdings(self, stocks):
-        """
-        
-        """
-
-        print(f"{self.name} Holdings:\n-------------------------------")
-
-        for index in range(len(stocks)):
-            try:
-                print(f"{index}: {stocks[index].get_name()}: {self.holdings[stocks[index].get_name()]}, worth ${self.holdings[stocks[index].get_name()]*stocks[index].get_value()}")
-            except:
-                print(f"{index}: {stocks[index].get_name()}: 0, worth $0")
-
-        self.show_coh()
-        self.show_net_worth()
-
-    def set_coh(self, stock, val):
-        """
-        Calculate cash on hand based on existing currenct and dividends.
-
-        Args:
-            stocks ([type]): [description]
-            outcome ([type]): [description]
-            stock ([type]): [description]
-        """
-
-        if stock.get_name() in self.holdings.keys():
-            self.coh += val*self.holdings[stock.get_name()]/100
-
-    def set_market_value(self, stocks):
-        """
-        Based on holdings, calculate market value.
-
-        Args:
-            stocks ([type]): [description]
-        """
-
-        self.market_value = 0
-
-        for key, val in self.holdings.items():
-            self.market_value += [stock.value for stock in stocks if stock.name == key][0]*val
-
-    def set_net_worth(self):
-        """
-        Calculates networth of player
-        """
-
-        self.net_worth = self.coh + self.market_value
-
-
-class Stock:
-    """
-    Create stock, manage values.
-    """
-
-    def __init__(self, name, value, values, color):
-        self.name = name
-        self.value = value
-        self.values = values
-        self.color = color
-
-    def __str__(self):
-        """
-        stringify
-        """
-        return json.dumps(vars(self), indent=2)
-
-    def get_name(self):
-        """
-        Return name of stock
-        """
-
-        return self.name
-
-    def get_value(self):
-        """
-        Return value of stock
-        """
-        return self.value
-
-    def get_values(self):
-        """
-        Return historic values of stock
-        """
-
-        return self.values
-
-    def get_color(self):
-        """
-        Return color of stock line
-        """
-
-        return self.color
-
-    def calculate_worth(self):
-        pass
-
-    def update_price(self, change, amount):
-        """
-        Change the stock value a random amount.
-        """
-
-        outcome = None
-
-        if change == "up":
-            self.value += amount/100
-        elif change =="down":
-            self.value -= amount/100
-        else:
-            if self.value >= 1:
-                print(f"------{self.name} ${amount/100:.2f} Dividend!------")
-
-        self.value = round(self.value, 2)
-
-        if self.value >= 2:
-            self.value = 1
-            outcome = "split"
-            print(f"------{self.name} Split!------")
-            
-        if self.value <= 0:
-            self.value = 1
-            outcome = "bust"
-            print(f"------{self.name} Bust!------")
-
-        # UNCOMMENT
-        print(f"{self.name}:{self.value} {change} {amount/100:.2f}")
-
-        return outcome
-
-    def set_values(self):
-        """
-        Build array of historic values of stocks.        
-        """
-
-        self.values.append(self.value)
-
 def randomize_order(player, stocks):
     """
     Decide wether AI wants to buy or sell and weather it wants to.
@@ -383,8 +98,8 @@ def show_stocks(stocks):
 
     print("**** Market outlook ****")
 
-    for i in range(len(stocks)):
-        print(f"{i}: {stocks[i].get_name()}@{stocks[i].get_value()}")
+    for index, stock in enumerate(stocks):
+        print(f"{index}: {stock.get_name()}@{stock.get_value()}")
 
 def show_available(player, stocks):
     """
@@ -394,8 +109,223 @@ def show_available(player, stocks):
         player ([type]): [description]
         stocks ([type]): [description]
     """
-    for index in range(len(stocks)):
-        print(f"{index}: MAX {500*( int(player.get_coh()/stocks[int(index)].get_value()) //500)} {stocks[index].get_name()} available @{stocks[int(index)].get_value()}")
+
+    for index, stock in enumerate(stocks):
+        print(f"{index}: MAX {500*( int(player.get_coh()/stock.get_value()) //500)} {stock.get_name()} available @{stock.get_value()}")
+
+def draw(x_axis, stocks):
+    """
+    Function to draw graph.
+
+    Args:
+        x ([type]): [description]
+        stocks ([type]): [description]
+    """
+
+    plt.xlabel('Number of Turns')
+    plt.ylabel('Stock value')
+
+    legend_str = [f"{index}: {stock.get_name()}" for index, stock in enumerate(stocks)]
+
+    plt.legend(legend_str)
+    plt.title('Stock Value over time')
+    plt.ylim(ymin = 0, ymax = 2)
+
+    for _stock in stocks:
+        plt.plot(x_axis, _stock.get_values(), _stock.get_color())
+
+    # plt.savefig('stock.png', dpi=1200)
+    plt.savefig('data/stock.png')
+
+def player_turn(player, stocks):
+    """
+    Logic for human plauer turn.
+
+    Args:
+        player ([type]): [description]
+        stocks ([type]): [description]
+    """
+
+    player.show_coh()
+
+    show_stocks(stocks)
+    player.show_holdings(stocks)
+
+    while True:
+        action = input("Select action: buy = b, sell s, finish = q, end game = gg, show standings: SS, show holdings: h, show market: m: ")
+        if action in ("q", "gg"):
+            break
+
+        if action == "m":
+            show_stocks(stocks)
+
+        if action == "h":
+            player.show_holdings(stocks)
+
+        if action == "b":
+            if player_buy(player, stocks) == -1:
+                continue
+
+        if action == "s":
+            if player_sell(player, stocks) == -1:
+                continue
+
+        # if action == "SS":
+        #     tmp_players = sorted(players, key=lambda x: x.net_worth, reverse=True)
+        #     for player in tmp_players:
+        #         player.set_market_value(stocks)
+        #         player.set_net_worth()
+        #         player.show_net_worth()
+
+        player.set_market_value(stocks)
+
+        return action
+
+def player_buy(player, stocks):
+    """
+    Human player buy stock function
+
+    Args:
+        player ([type]): [description]
+        stocks ([type]): [description]
+
+    Returns:
+        [type]: [description]
+    """
+
+    show_stocks(stocks)
+    show_available(player, stocks)
+    stocks_to_buy = input("List stocks to purchase (Ex. 1 or 0, 3, 5): ")
+    if stocks_to_buy == "-1":
+        return -1
+
+    for i in stocks_to_buy.split(","):
+
+        # loop will reset if index is out of range..
+        try:
+            if int(i) not in range(len(stocks)):
+                continue
+        except:
+            continue
+
+        inp_str = f"How much of {stocks[int(i)].get_name()} to buy? MAX {500*( int(player.get_coh()/stocks[int(i)].get_value()) //500)} available @{stocks[int(i)].get_value()}: "
+        try:
+            buy_count = input(inp_str)
+        except:
+            print("Bad input")
+            return -1
+
+        buy_count = 500*( int(buy_count) //500)
+
+        if buy_count:
+            player.buy_stock(stocks[int(i)], buy_count)
+
+        player.show_coh()
+
+        return 0
+
+def player_sell(player, stocks):
+    """
+    Human player sell stocks function.
+
+    Args:
+        player ([type]): [description]
+        stocks ([type]): [description]
+
+    Returns:
+        [type]: [description]
+    """
+    player.show_holdings(stocks)
+
+    stocks_to_sell = input("List stocks to sell (Ex. 1 or 0, 3, 5): ")
+    if stocks_to_sell == "-1":
+        return -1
+
+    for index in stocks_to_sell.split(","):
+
+        try:
+            stock = stocks[int(index)]
+        except:
+            print("bad index")
+            return -1
+        try:
+            inp_str = f"How much of {stock.get_name()} to sell? Available {player.get_holdings()[stock.get_name()]}: "
+            try:
+                sell_count = int(input(inp_str))
+            except:
+                print("Bad input")
+                return -1
+
+            # stock = [_stock for _stock in stocks if _stock.get_name() == list(player.holdings.keys())[int(i)]][0]
+
+            player.sell_stock(stock, sell_count)
+            player.show_coh()
+        except:
+            print(f"{stock.get_name()} not in holdings")
+
+        return 0
+
+def game_loop(players, stocks, player_counts):
+    """
+    Main game loop.
+
+    Args:
+        players ([type]): [description]
+        stocks ([type]): [description]
+        player_counts ([type]): [description]
+    """
+
+    x_axis = [0]
+    action = 0
+    turn_num = 0
+
+    print("########## Game starts ##########")
+    while True:
+
+        # ROLL/Update val.
+        roll, value, stock = ROLL_TYPE[randint(0, 2)], AMOUNTS[randint(0,2)], stocks[randint(0, len(STOCKS)-1)]
+
+        outcome = stock.update_price(roll, value)
+
+        for _stock in stocks:
+            _stock.set_values()
+
+        # UPDATE PLAYER VALUES.
+        for player in players:
+            # Only need to update coh if there is a dividend payout
+            if roll == "div" and stock.get_value() >= 1:
+                player.set_coh(stock, value)
+
+            player.set_market_value(stocks)
+            player.set_net_worth()
+            # print(f"{player.get_name()}:${player.get_net_worth()}")
+
+            player.split_bust(outcome, stock)
+
+        turn_num += 1
+        x_axis.append(turn_num)
+
+        # Every 10 turns, players can purchase.
+        if turn_num % 10 == 0:
+
+            draw(x_axis, stocks)
+
+            print("############# AI Players will take turns #####################")
+
+            # Players make moves
+            for i in range(int(player_counts[1])):
+                randomize_order(players[i], stocks)
+
+            print("############# Human Players will take turns #####################")
+
+            for i in range(int(player_counts[0])):
+                print(f"{players[int(player_counts[1]) + i].get_name()}'s turn.")
+                action = player_turn(players[int(player_counts[1]) + i], stocks)
+
+        # if turn_num > 100 or action == "gg":
+        if action == "gg":
+            break
+    return turn_num
 
 def main():
     """
@@ -412,15 +342,15 @@ def main():
     stocks = []
     players = []
 
-    # player_counts = input("Enter number of Human and AI players (Example: 1, 5): ").split(",")
-    player_counts = "1, 10".split(",")
+    player_counts = input("Enter number of Human and AI players (Example: 1, 5): ").split(",")
+    # player_counts = "1, 10".split(",")
 
     for _ in range(int(player_counts[1])):
         players.append(Player("AI_" + names.get_full_name(), 5000))
 
     for _ in range(int(player_counts[0])):
-        # name = input("Input Human player name: ")
-        name = "Karan Trivedi"
+        name = input("Input Human player name: ")
+        # name = "Karan Trivedi"
         players.append(Player(name, 5000))
 
     print(f"{int(player_counts[0]) + int(player_counts[1])} Players in game:")
@@ -430,146 +360,7 @@ def main():
     for _stock in STOCKS:
         stocks.append(Stock(_stock["name"], 1, _stock["values"], _stock["color"]))
 
-    turn_num = 0
-    x = [0]
-    action = 0
-
-    print("########## Game starts ##########")
-    while True:
-
-        # ROLL/Update val.
-        roll, value, stock = ROLL_TYPE[randint(0, 2)], AMOUNTS[randint(0,2)], stocks[randint(0, len(STOCKS)-1)]
-
-        outcome = stock.update_price(roll, value)
-
-        for _stock in stocks:
-            _stock.set_values()
-
-        # UPDATE PLAYER VALUES.
-        for player in players:
-            # only need to update coh if there is a dividend payout
-            if roll == "div" and stock.get_value() >= 1:
-                player.set_coh(stock, value)
-
-            player.set_market_value(stocks)
-            player.set_net_worth()
-            # print(f"{player.get_name()}:${player.get_net_worth()}")
-
-            player.split_bust(outcome, stock)
-
-        turn_num += 1
-        x.append(turn_num)
-
-        # Every 10 turns, players can purchase.
-        if turn_num % 10 == 0:
-            plt.xlabel('Number of Turns')
-            plt.ylabel('Stock value')
-
-            legend_str = [f"{index}: {stocks[index].get_name()}" for index in range(len(stocks))]
-
-            plt.legend(legend_str)
-            plt.title('Stock Value over time')
-            plt.ylim(ymin = 0, ymax = 2)
-
-            for _stock in stocks:
-                plt.plot(x, _stock.get_values(), _stock.get_color())
-
-            # plt.savefig('stock.png', dpi=1200)
-            plt.savefig('data/stock.png')
-
-            print("############# AI Players will take turns #####################")
-
-            # Players make moves
-            for i in range(int(player_counts[1])):
-                randomize_order(players[i], stocks)
-
-            print("############# Human Players will take turns #####################")
-
-            for i in range(int(player_counts[0])):
-
-                print(f"{players[int(player_counts[1]) + i].get_name()}'s turn.")
-                player.show_coh()
-
-                show_stocks(stocks)
-                player.show_holdings(stocks)
-
-                while True:
-                    action = input("Select action: buy = b, sell s, finish = q, end game = gg, show standings: SS, show holdings: h, show market: m: ")
-                    if action == "q" or action == "gg":
-                        break
-
-                    if action == "m":
-                        show_stocks(stocks)
-
-                    if action == "h":
-                        player.show_holdings(stocks)
-
-                    if action == "b":
-                        show_stocks(stocks)
-                        show_available(player, stocks)
-                        stocks_to_buy = input("List stocks to purchase (Ex. 1 or 0, 3, 5): ")
-                        if stocks_to_buy == "-1": continue
-                        for i in stocks_to_buy.split(","):
-
-                            # loop will reset if indec is out of range..
-                            try:
-                                if int(i) not in range(len(stocks)): continue
-                            except:
-                                continue
-
-                            inp_str = f"How much of {stocks[int(i)].get_name()} to buy? MAX {500*( int(player.get_coh()/stocks[int(i)].get_value()) //500)} available @{stocks[int(i)].get_value()}: "
-                            try:
-                                buy_count = input(inp_str)
-                            except:
-                                print("Bad input")
-                                continue
-
-                            buy_count = 500*( int(buy_count) //500)
-                            if buy_count: player.buy_stock(stocks[int(i)], buy_count)
-                            player.show_coh()
-
-                    if action == "s":
-                        player.show_holdings(stocks)
-
-                        stocks_to_sell = input("List stocks to sell (Ex. 1 or 0, 3, 5): ")
-                        if stocks_to_sell == "-1": continue
-
-                        for index in stocks_to_sell.split(","):
-
-                            try:
-                                stock = stocks[int(index)]
-                            except:
-                                print("bad index")
-                                continue
-                            try:
-                                inp_str = f"How much of {stock.get_name()} to sell? Available {player.get_holdings()[stock.get_name()]}: "
-                                try:
-                                    sell_count = int(input(inp_str))
-                                except:
-                                    print("Bad input")
-                                    continue
-
-                                # stock = [_stock for _stock in stocks if _stock.get_name() == list(player.holdings.keys())[int(i)]][0]
-
-                                player.sell_stock(stock, sell_count)
-                                player.show_coh()
-                            except:
-                                print(f"{stock.get_name()} not in holdings")
-
-                    # if action == "SS":
-                    #     tmp_players = sorted(players, key=lambda x: x.net_worth, reverse=True)
-                    #     for player in tmp_players:
-                    #         player.set_market_value(stocks)
-                    #         player.set_net_worth()
-                    #         player.show_net_worth()
-
-                    player.set_market_value(stocks)
-
-        # if turn_num > 100 or action == "gg":
-        if action == "gg":
-            break
-
-        # sleep(0.1)
+    turn_num = game_loop(players, stocks, player_counts)
 
     print("########## Game ended! ##########")
     print(f"Game lasted: {turn_num} Turns")
@@ -582,12 +373,9 @@ def main():
     players.sort(key=lambda x: x.net_worth, reverse=True)
 
     for player in players:
-
         player.set_market_value(stocks)
         player.set_net_worth()
         player.show_net_worth()
-
-
 
 if __name__ == "__main__":
     main()
